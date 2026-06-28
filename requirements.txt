@@ -1,0 +1,8 @@
+# VSign Detect — Python 3.11. Use a venv. Cross-platform (Windows dev / macOS arm64 prod).
+# Pin exact versions once first install succeeds on both machines.
+mediapipe        # hand detection + built-in "Victory" gesture (arm64 wheels for Apple Silicon)
+opencv-python    # webcam capture
+python-osc       # OSC output to TouchDesigner / any OSC interface
+pyserial         # Arduino serial link (used by the serial output sink, later)
+pyyaml           # config
+numpy            # vector math for landmark_rule classifier

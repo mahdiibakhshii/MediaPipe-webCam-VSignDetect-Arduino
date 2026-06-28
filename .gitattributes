@@ -1,0 +1,17 @@
+# Normalize line endings. The production target is macOS, and the shell scripts
+# MUST be LF or they break — so store/check out text as LF everywhere.
+* text=auto eol=lf
+
+# Belt-and-suspenders for things that must never be CRLF on macOS:
+*.command eol=lf
+*.sh      eol=lf
+*.ino     eol=lf
+*.py      eol=lf
+*.yaml    eol=lf
+*.yml     eol=lf
+
+# Binary assets — never convert.
+*.jpeg binary
+*.jpg  binary
+*.png  binary
+*.task binary

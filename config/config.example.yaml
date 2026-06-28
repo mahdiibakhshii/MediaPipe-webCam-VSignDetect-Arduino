@@ -1,0 +1,64 @@
+# VSign Detect configuration — copy to config.yaml and edit per machine.
+# This file is the ONLY place machine-specific values live. Code reads it;
+# nothing is hardcoded. See agents/*.md for what each key does.
+
+app:
+  log_level: INFO
+  log_file: logs/vsign.log
+  watchdog_stale_s: 5        # restart a vision worker silent this long
+  heartbeat_s: 30            # periodic "alive" log
+
+# One entry per webcam. zone is a label; index is OS-specific (re-probe per machine).
+cameras:
+  - zone: "A"
+    index: 0                 # Windows: 0,1,...  macOS: re-probe (doc 05)
+    width: 640
+    height: 480
+    fps: 30
+    frame_skip: 0            # 0 = every frame; raise to save CPU
+    worker: thread           # thread | process
+  - zone: "B"
+    index: 1
+    width: 640
+    height: 480
+    fps: 30
+    frame_skip: 0
+    worker: thread
+
+detection:
+  classifier: gesture_recognizer   # gesture_recognizer | landmark_rule
+  min_score: 0.6                   # confidence required to call it "Victory"
+  num_hands: 1
+  model_complexity: 0              # 0 = lite/fast (recommended for 2 streams on CPU)
+  # landmark_rule extras (ignored by gesture_recognizer):
+  spread_min: 0.0                  # min index/middle tip gap; 0 = skip check
+  require_thumb_tucked: false
+
+trigger:
+  mode: time                # time | frames
+  hold_ms: 350              # gesture must persist this long (time mode)
+  hold_frames: 8            # used when mode = frames
+  cooldown_s: 3.0           # min gap between fires (>= firmware PULSE_MS/1000 + gap)
+  require_release: true     # one continuous hold = one fire
+  release_ms: 250
+
+# Output sinks: where a fire (and live per-frame state) is sent. Multiple allowed.
+# Each sink may receive per-frame ZoneSignals (on_signal) and/or fire events (on_fire).
+outputs:
+  - type: osc            # send to TouchDesigner / any OSC receiver
+    enabled: true
+    host: "127.0.0.1"    # TD machine IP (same machine = localhost)
+    port: 7000
+    prefix: "/vsign"
+  - type: console        # print fires to the log (handy while developing)
+    enabled: true
+  - type: serial         # Arduino relay (uses the 'serial:' section below)
+    enabled: false        # set true once the Arduino is flashed & connected
+
+# Serial settings consumed by the (future) serial output sink.
+serial:
+  port: "COM3"              # macOS: "/dev/cu.usbserial-XXXX" or "/dev/cu.usbmodemXXXX"
+  baud: 115200
+  connect_timeout_s: 5
+  reconnect_min_s: 1
+  reconnect_max_s: 10

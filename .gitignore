@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Per-machine config & runtime
+config/config.yaml
+logs/
+*.log
+
+# MediaPipe model files (download on setup if used as .task assets)
+*.task
+
+# OS
+.DS_Store
+Thumbs.db
