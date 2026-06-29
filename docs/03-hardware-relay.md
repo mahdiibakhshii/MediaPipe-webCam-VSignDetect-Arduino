@@ -52,7 +52,6 @@ Line-based ASCII, `115200` baud, `\n`-terminated. Full spec in
 | host → Arduino | `FIRE` | Pulse the relay now (pulse mode) |
 | Arduino → host | `OK FIRE` | Pulse started |
 | Arduino → host | `DONE` | Pulse finished, relay OFF |
-| Arduino → host | `WATCHDOG OFF` | Held ON but host went silent → released |
 
 While a pulse is active, additional `FIRE` commands are **ignored** by the
 firmware (it replies `BUSY`) — host-side cooldown should already prevent this,
@@ -62,16 +61,11 @@ but the firmware is the last line of defense.
 
 - `PULSE_MS` (firmware constant, default `2000`) — pulse-mode relay ON duration.
   Host-side `cooldown_s` should be ≥ `PULSE_MS` plus a gap.
-- `WATCHDOG_MS` (firmware constant, default `2000`) — follow-mode safety release.
-  The host re-sends `ON` every `serial.keepalive_s` (default 0.75 s, must be
-  `< WATCHDOG_MS`) to keep the relay alive while a V is held.
-
 ## Safe defaults
 
 - On boot: relay **OFF**.
 - Non-blocking timing using `millis()` (never `delay()`), so the board stays
   responsive to serial.
-- If no host is connected — or it disconnects/crashes — the board ends with the
-  relay OFF (idle default + watchdog release).
+- Relay state purely mirrors what the host sends — no watchdog or auto-release.
 
 Firmware lives in [`firmware/`](../firmware/).

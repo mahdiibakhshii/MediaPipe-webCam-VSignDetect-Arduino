@@ -4,7 +4,7 @@
     python -m src.tools.serial_test --port COM5 --no-fire
 
 Expects the firmware in firmware/vsign_relay flashed. You should see READY, PONG,
-then OK FIRE … DONE (a click), then OK ON (relay holds ~2 s) … OK OFF.
+then OK FIRE … DONE (a click), then OK ON (relay holds 2 s) … OK OFF.
 """
 from __future__ import annotations
 
@@ -40,7 +40,6 @@ def main():
         connect_timeout_s=scfg.get("connect_timeout_s", 5),
         reconnect_min_s=scfg.get("reconnect_min_s", 1),
         reconnect_max_s=scfg.get("reconnect_max_s", 10),
-        keepalive_s=scfg.get("keepalive_s", 0.75),
     )
     agent.start()
     log.info("opening %s …", scfg["port"])

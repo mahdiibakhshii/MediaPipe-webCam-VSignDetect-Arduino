@@ -18,16 +18,12 @@ log = logging.getLogger("serial")
 
 class SerialAgent:
     def __init__(self, port: str, baud: int = 115200, connect_timeout_s: float = 5,
-                 reconnect_min_s: float = 1, reconnect_max_s: float = 10,
-                 keepalive_s: float = 0.75):
+                 reconnect_min_s: float = 1, reconnect_max_s: float = 10, **_ignored):
         self.port = port
         self.baud = int(baud)
         self.connect_timeout_s = float(connect_timeout_s)
         self.reconnect_min_s = float(reconnect_min_s)
         self.reconnect_max_s = float(reconnect_max_s)
-        # While the relay is held ON (follow mode) we re-send ON this often so the
-        # firmware watchdog never trips. Must be < the firmware WATCHDOG_MS.
-        self.keepalive_s = float(keepalive_s)
 
         self._ser = None
         self._connected = threading.Event()
@@ -125,7 +121,6 @@ class SerialAgent:
 
     def _run(self):
         backoff = self.reconnect_min_s
-        last_keepalive = 0.0
         while not self._stop.is_set():
             if self._ser is None:
                 if self._open_port():
@@ -136,7 +131,6 @@ class SerialAgent:
                         self._ser.write(b"ON\n" if self._relay_on else b"OFF\n")
                     except Exception:
                         pass
-                    last_keepalive = time.monotonic()
                     log.info("connected on %s", self.port)
                 else:
                     self._close_port()
@@ -153,13 +147,6 @@ class SerialAgent:
                         log.info("-> %s", cmd.decode().strip())
                 except queue.Empty:
                     pass
-
-                # While the relay is held ON, re-send ON periodically so the
-                # firmware watchdog doesn't release it (fail-safe on host crash).
-                now = time.monotonic()
-                if self._relay_on and now - last_keepalive >= self.keepalive_s:
-                    self._ser.write(b"ON\n")
-                    last_keepalive = now
 
                 # read one response line (blocks up to the read timeout)
                 line = self._read_line()

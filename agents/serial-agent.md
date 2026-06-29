@@ -35,15 +35,13 @@ are non-blocking and thread-safe.
 | Arduino → host | `OK FIRE` | Pulse started |
 | Arduino → host | `BUSY` | Ignored — pulse running, or relay is held ON |
 | Arduino → host | `DONE` | Pulse finished, relay OFF |
-| Arduino → host | `WATCHDOG OFF` | Held ON but host went silent → released |
 
 ## Behavior
 
 - **Open**: open port, then wait up to `connect_timeout_s` for `READY`. If the
   board reset on port open (Arduino does), `READY` arrives shortly after.
-- **Follow mode keepalive**: while the relay is held ON, the agent re-sends `ON`
-  every `keepalive_s` so the firmware watchdog never trips. `keepalive_s` MUST be
-  shorter than the firmware `WATCHDOG_MS` (default 2 s).
+- **Follow mode**: the relay mirrors detection state directly — `set_relay(True)`
+  turns it ON, `set_relay(False)` turns it OFF. No keepalive or timeout needed.
 - **Reconnect**: on write/read error or port loss, mark disconnected, retry with
   exponential backoff (`reconnect_min_s` → `reconnect_max_s`). Never throw to the
   caller; commands just return `False` while disconnected. The last desired relay
@@ -61,15 +59,14 @@ serial:
   connect_timeout_s: 5
   reconnect_min_s: 1
   reconnect_max_s: 10
-  keepalive_s: 0.75       # follow mode ON-refresh; must be < firmware WATCHDOG_MS
 ```
 
 ## Acceptance criteria
 
 - [ ] With firmware flashed, `start()` connects and logs `READY`.
 - [ ] `fire()` pulses the relay (pulse mode); logs `OK FIRE` … `DONE`.
-- [ ] `set_relay(True)` holds the relay ON and it stays on while held; `set_relay(False)` releases it.
-- [ ] Killing the host while the relay is held ON releases it within `WATCHDOG_MS` (no latch-on).
+- [ ] `set_relay(True)` holds the relay ON; `set_relay(False)` releases it.
+- [ ] The relay mirrors detection state directly with no timeout.
 - [ ] Unplugging the Arduino mid-run does not crash; replugging reconnects and re-asserts state.
 - [ ] No serial writes happen from more than one place.
 - [ ] Works on Windows (`COMx`) and macOS (`/dev/cu.*`) with only a config change.
