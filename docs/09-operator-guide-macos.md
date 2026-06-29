@@ -32,6 +32,19 @@ That's it — from now on everything is double-click.
 1. **Double-click `setup.command`.** It installs everything (a few minutes) and
    prepares the settings file. Wait for "SETUP COMPLETE", then close the window.
 
+   > **If you see "Python 3.10+ is required":** the Mac's built-in Python is too
+   > old. If you don't have an admin password, open Terminal and run:
+   > ```bash
+   > curl -LsSf https://astral.sh/uv/install.sh | sh
+   > source ~/.zshrc
+   > uv python install 3.11
+   > cd ~/vsign-detect
+   > uv venv --python 3.11 .venv
+   > uv pip install -r requirements.txt
+   > cp config/config.example.yaml config/config.yaml
+   > ```
+   > Then skip to step 2.
+
 2. **Double-click `find-devices.command`.** Allow the camera prompt. It lists your
    cameras (with numbers) and the Arduino port. **Write these down**, e.g.:
    - Built-in camera = `0`, USB camera = `1`
@@ -50,13 +63,18 @@ That's it — from now on everything is double-click.
    it light up. Tick **Drive relay** and the relay should click on a ✌️. Close the
    window when done.
 
-5. **Make it run on boot. Double-click `install-autostart.command`.** Now the
+5. **Grant camera permission for background use.** Double-click
+   `start-engine.command`, click **Allow** on the camera prompt, let it run for a
+   few seconds, then close the window. This must happen once so the background
+   service is allowed to use the cameras.
+
+6. **Make it run on boot. Double-click `install-autostart.command`.** Now the
    system starts automatically whenever the Mac turns on, and restarts itself if
    it ever stops.
 
-> **Camera permission for autostart:** before relying on autostart, run
-> `start-engine.command` once and click **Allow** on the camera prompt. This lets
-> the automatic background service use the cameras.
+   > **Also enable auto-login** so the Mac doesn't wait at the login screen:
+   > **System Settings → Users & Groups → Automatic login → pick the user.**
+   > (Requires admin password — ask whoever manages the machine.)
 
 ---
 
