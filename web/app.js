@@ -300,14 +300,15 @@ function renderConfig() {
   lines.push("detection:");
   lines.push(`  classifier: gesture_recognizer`);
   lines.push(`  min_score: ${p.minScore}`);
-  lines.push(`  num_hands: 1`);
+  lines.push(`  num_hands: 4`);
   lines.push("");
   lines.push("trigger:");
+  lines.push(`  relay_mode: follow`);
   lines.push(`  mode: time`);
   lines.push(`  hold_ms: ${p.holdMs}`);
+  lines.push(`  release_ms: ${p.releaseMs}`);
   lines.push(`  cooldown_s: ${p.cooldownS}`);
   lines.push(`  require_release: true`);
-  lines.push(`  release_ms: ${p.releaseMs}`);
   configYamlEl.textContent = lines.join("\n");
 }
 

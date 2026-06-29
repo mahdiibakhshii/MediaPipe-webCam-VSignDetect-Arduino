@@ -2,9 +2,14 @@
 
 ## Goal
 
-On a `FIRE` command from the host, the Arduino switches a **relay ON for a
-configurable duration, then OFF automatically** (momentary pulse). Timing lives
-on the Arduino so it is deterministic and survives host hiccups.
+Drive a relay from the host in one of two modes:
+
+- **follow** (default): the host **holds** the relay ON/OFF (`ON`/`OFF`) so it
+  tracks a live victory sign. A firmware **watchdog** releases it if the host goes
+  silent, so it can never latch on.
+- **pulse** (legacy): on `FIRE` the Arduino switches the **relay ON for a
+  configurable duration, then OFF automatically** (momentary pulse). Timing lives
+  on the Arduino so it is deterministic and survives host hiccups.
 
 ## Bill of materials
 
@@ -42,24 +47,31 @@ Line-based ASCII, `115200` baud, `\n`-terminated. Full spec in
 | Arduino → host | `READY` | Boot complete, relay OFF |
 | host → Arduino | `PING` | Liveness check |
 | Arduino → host | `PONG` | Reply to PING |
-| host → Arduino | `FIRE` | Pulse the relay now |
+| host → Arduino | `ON` / `OFF` | Hold relay ON / OFF (follow mode) |
+| Arduino → host | `OK ON` / `OK OFF` | Held state set |
+| host → Arduino | `FIRE` | Pulse the relay now (pulse mode) |
 | Arduino → host | `OK FIRE` | Pulse started |
 | Arduino → host | `DONE` | Pulse finished, relay OFF |
+| Arduino → host | `WATCHDOG OFF` | Held ON but host went silent → released |
 
 While a pulse is active, additional `FIRE` commands are **ignored** by the
 firmware (it replies `BUSY`) — host-side cooldown should already prevent this,
 but the firmware is the last line of defense.
 
-## Pulse timing
+## Timing
 
-- `PULSE_MS` (firmware constant, default `2000`) — relay ON duration.
-- Host-side `cooldown_seconds` (config) should be ≥ `PULSE_MS` plus desired gap.
+- `PULSE_MS` (firmware constant, default `2000`) — pulse-mode relay ON duration.
+  Host-side `cooldown_s` should be ≥ `PULSE_MS` plus a gap.
+- `WATCHDOG_MS` (firmware constant, default `2000`) — follow-mode safety release.
+  The host re-sends `ON` every `serial.keepalive_s` (default 0.75 s, must be
+  `< WATCHDOG_MS`) to keep the relay alive while a V is held.
 
 ## Safe defaults
 
 - On boot: relay **OFF**.
-- Non-blocking pulse using `millis()` (never `delay()`), so the board stays
+- Non-blocking timing using `millis()` (never `delay()`), so the board stays
   responsive to serial.
-- If no host is connected, the board simply idles with the relay OFF.
+- If no host is connected — or it disconnects/crashes — the board ends with the
+  relay OFF (idle default + watchdog release).
 
 Firmware lives in [`firmware/`](../firmware/).

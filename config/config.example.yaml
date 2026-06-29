@@ -28,19 +28,24 @@ cameras:
 detection:
   classifier: gesture_recognizer   # gesture_recognizer | landmark_rule
   min_score: 0.6                   # confidence required to call it "Victory"
-  num_hands: 1
+  num_hands: 4                     # max hands tracked per frame; ANY hand = a V (OR)
   model_complexity: 0              # 0 = lite/fast (recommended for 2 streams on CPU)
   # landmark_rule extras (ignored by gesture_recognizer):
   spread_min: 0.0                  # min index/middle tip gap; 0 = skip check
   require_thumb_tucked: false
 
 trigger:
-  mode: time                # time | frames
-  hold_ms: 350              # gesture must persist this long (time mode)
+  relay_mode: follow        # follow | pulse
+                            #   follow = relay ON while any hand holds a V, OFF when none do
+                            #   pulse  = one momentary pulse per debounced gesture (legacy)
+  mode: time                # time | frames  (how the hold below is measured)
+  hold_ms: 350              # V must persist this long before relay turns ON (time mode)
   hold_frames: 8            # used when mode = frames
+  release_ms: 250           # follow: no-V this long turns relay OFF (debounce, anti-flicker)
+                            # pulse:  gesture must drop this long before re-arming
+  # pulse-mode only:
   cooldown_s: 3.0           # min gap between fires (>= firmware PULSE_MS/1000 + gap)
   require_release: true     # one continuous hold = one fire
-  release_ms: 250
 
 # Output sinks: where a fire (and live per-frame state) is sent. Multiple allowed.
 # Each sink may receive per-frame ZoneSignals (on_signal) and/or fire events (on_fire).
@@ -62,3 +67,4 @@ serial:
   connect_timeout_s: 5
   reconnect_min_s: 1
   reconnect_max_s: 10
+  keepalive_s: 0.75         # follow mode: re-send ON this often; must be < firmware WATCHDOG_MS (2s)

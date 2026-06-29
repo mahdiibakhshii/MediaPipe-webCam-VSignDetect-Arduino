@@ -8,7 +8,7 @@ from mediapipe.tasks.python import vision
 
 
 class GestureRecognizerClassifier:
-    def __init__(self, model_path: str, num_hands: int = 1,
+    def __init__(self, model_path: str, num_hands: int = 4,
                  min_score: float = 0.6, **_ignored):
         if not model_path:
             raise ValueError("gesture_recognizer requires a model_path")

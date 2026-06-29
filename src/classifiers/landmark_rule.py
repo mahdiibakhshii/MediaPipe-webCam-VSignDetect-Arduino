@@ -26,7 +26,7 @@ def _dist(a, b) -> float:
 
 
 class LandmarkRuleClassifier:
-    def __init__(self, model_path: str, num_hands: int = 1,
+    def __init__(self, model_path: str, num_hands: int = 4,
                  min_score: float = 0.6, spread_min: float = 0.0,
                  require_thumb_tucked: bool = False, **_ignored):
         if not model_path:

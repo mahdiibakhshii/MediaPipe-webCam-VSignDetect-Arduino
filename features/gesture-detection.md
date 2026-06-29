@@ -21,6 +21,14 @@ MediaPipe, two interchangeable classifiers behind one interface (see
 Detection is **per-frame and raw**; turning it into a trustworthy event is the
 job of [`trigger-debounce`](trigger-debounce.md).
 
+## Multiple hands & people
+
+`num_hands` (default 4) sets how many hands MediaPipe tracks per frame, so either
+of a person's hands — or several people in frame — are all considered. The
+classifier reports `is_victory=True` if **any** tracked hand is a ✌️ (logical OR);
+no per-hand identity is needed. Higher `num_hands` costs more CPU per frame, so
+keep it to what the venue needs.
+
 ## Tuning knobs
 
 `detection.min_score`, `model_complexity`, `num_hands`, and (for landmark_rule)

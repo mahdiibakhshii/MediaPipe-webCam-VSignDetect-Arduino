@@ -42,7 +42,17 @@ def main():
                 except Exception:
                     log.exception("sink on_fire error")
 
-    trigger = TriggerAgent(cfg.get("trigger", {}), on_fire)
+    def on_state(ev):
+        log.info("RELAY %s zone=%s conf=%.2f",
+                 "ON" if ev.on else "OFF", ev.zone, ev.confidence)
+        for s in sinks:
+            if hasattr(s, "on_state"):
+                try:
+                    s.on_state(ev)
+                except Exception:
+                    log.exception("sink on_state error")
+
+    trigger = TriggerAgent(cfg.get("trigger", {}), on_fire, on_state)
 
     q: "queue.Queue" = queue.Queue(maxsize=400)
 

@@ -53,7 +53,7 @@ cameras:
 detection:
   classifier: gesture_recognizer   # gesture_recognizer | landmark_rule
   min_score: 0.6                    # min confidence for "Victory"
-  num_hands: 1
+  num_hands: 4                      # max hands tracked/frame; ANY hand = a V (multi-person)
   model_complexity: 0               # 0 = lite/fast
   # landmark_rule extras:
   spread_min: 0.0                   # 0 = ignore index/middle gap check

@@ -5,6 +5,8 @@ Address scheme (prefix default '/vsign'); see docs/06-osc-touchdesigner.md:
               {prefix}/zone/{zone}/confidence   float 0..1
   on fire:    {prefix}/fire                     [zone:str, confidence:float]
               {prefix}/zone/{zone}/fire         float confidence
+  on relay:   {prefix}/relay                    int 0|1   (follow mode)
+              {prefix}/relay/zone               str | ""  (driving zone, "" when off)
 """
 from __future__ import annotations
 
@@ -36,3 +38,10 @@ class OscSink:
                                       float(ev.confidence))
         except OSError as e:
             log.debug("osc send_fire failed: %s", e)
+
+    def on_state(self, ev):
+        try:
+            self._client.send_message(f"{self._prefix}/relay", int(ev.on))
+            self._client.send_message(f"{self._prefix}/relay/zone", ev.zone or "")
+        except OSError as e:
+            log.debug("osc send_state failed: %s", e)

@@ -44,7 +44,7 @@ VisionAgent(zoneB) ─┴──────────────► TriggerAg
 |---|---|---|
 | Capture resolution | 640×480 | Plenty for hand detection; quarter the pixels of 720p |
 | Target FPS | 20–30 | Smooth enough for a held gesture; lighter than 60 |
-| `num_hands` | 1 | One hand per zone is enough to fire |
+| `num_hands` | 4 | Track several hands so either hand / multiple people can show a V (OR); higher costs more CPU per frame |
 | Model complexity | low/lite | Faster; accuracy is fine for one clear gesture |
 | Frame skip | optional | Process every Nth frame if CPU is tight |
 

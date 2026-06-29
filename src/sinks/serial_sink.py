@@ -16,12 +16,20 @@ class SerialSink:
             connect_timeout_s=serial_cfg.get("connect_timeout_s", 5),
             reconnect_min_s=serial_cfg.get("reconnect_min_s", 1),
             reconnect_max_s=serial_cfg.get("reconnect_max_s", 10),
+            keepalive_s=serial_cfg.get("keepalive_s", 0.75),
         )
         self._agent.start()
 
     def on_fire(self, ev):
+        # Pulse relay mode: one-shot fire.
         if not self._agent.fire():
             log.warning("FIRE dropped - Arduino not connected")
+
+    def on_state(self, ev):
+        # Follow relay mode: hold the relay to match the live victory state.
+        if not self._agent.set_relay(ev.on):
+            log.warning("relay %s dropped - Arduino not connected",
+                        "ON" if ev.on else "OFF")
 
     @property
     def connected(self) -> bool:
