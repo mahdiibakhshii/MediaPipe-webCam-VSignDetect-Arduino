@@ -7,6 +7,8 @@ app:
   log_file: logs/vsign.log
   watchdog_stale_s: 5        # restart a vision worker silent this long
   heartbeat_s: 30            # periodic "alive" log
+  status_host: "0.0.0.0"    # live debug dashboard host (0.0.0.0 = all interfaces)
+  status_port: 8080          # open http://<mac-mini-ip>:8080/ to view
 
 # One entry per webcam. zone is a label; index is OS-specific (re-probe per machine).
 cameras:

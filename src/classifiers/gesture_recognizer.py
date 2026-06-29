@@ -6,6 +6,8 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
+from ..types import HandResult
+
 
 class GestureRecognizerClassifier:
     def __init__(self, model_path: str, num_hands: int = 4,
@@ -32,17 +34,31 @@ class GestureRecognizerClassifier:
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         result = self._recognizer.recognize_for_video(image, ts)
 
+        hands: list[HandResult] = []
         is_victory = False
         victory_score = 0.0
-        for hand_gestures in result.gestures:  # one list per detected hand
+
+        for i, hand_gestures in enumerate(result.gestures):  # one list per detected hand
             if not hand_gestures:
                 continue
             top = hand_gestures[0]
-            if top.category_name == "Victory":
+
+            handedness = "Unknown"
+            if result.handedness and i < len(result.handedness) and result.handedness[i]:
+                handedness = result.handedness[i][0].display_name
+
+            hand_is_victory = top.category_name == "Victory" and top.score >= self._min_score
+            hands.append(HandResult(
+                handedness=handedness,
+                is_victory=hand_is_victory,
+                confidence=top.score,
+            ))
+
+            if hand_is_victory:
+                is_victory = True
                 victory_score = max(victory_score, top.score)
-                if top.score >= self._min_score:
-                    is_victory = True
-        return is_victory, victory_score
+
+        return is_victory, victory_score, hands
 
     def close(self):
         self._recognizer.close()

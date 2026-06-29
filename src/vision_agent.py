@@ -83,12 +83,12 @@ class VisionAgent(threading.Thread):
 
                 ts_ms = time.monotonic() * 1000.0
                 try:
-                    is_victory, conf = classifier.classify(frame, ts_ms)
+                    is_victory, conf, hands = classifier.classify(frame, ts_ms)
                 except Exception:
                     log.exception("zone %s: classify error", self.zone)
-                    is_victory, conf = False, 0.0
+                    is_victory, conf, hands = False, 0.0, []
 
-                self.emit(ZoneSignal(self.zone, is_victory, conf, time.monotonic()))
+                self.emit(ZoneSignal(self.zone, is_victory, conf, time.monotonic(), hands))
         finally:
             if cap is not None:
                 cap.release()

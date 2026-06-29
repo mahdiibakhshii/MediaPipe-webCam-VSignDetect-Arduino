@@ -14,6 +14,7 @@ from .config import load_config
 from .logging_setup import setup_logging
 from .models import ensure_model, model_for_classifier
 from .sinks import build_sinks
+from .status_server import StatusStore, start_status_server
 from .trigger_agent import TriggerAgent
 from .vision_agent import VisionAgent
 
@@ -33,6 +34,14 @@ def main():
 
     sinks = build_sinks(cfg)
 
+    app_cfg = cfg.get("app", {})
+    status_store = StatusStore()
+    start_status_server(
+        status_store,
+        host=app_cfg.get("status_host", "0.0.0.0"),
+        port=int(app_cfg.get("status_port", 8080)),
+    )
+
     def on_fire(ev):
         log.info("FIRE zone=%s conf=%.2f", ev.zone, ev.confidence)
         for s in sinks:
@@ -45,6 +54,7 @@ def main():
     def on_state(ev):
         log.info("RELAY %s zone=%s conf=%.2f",
                  "ON" if ev.on else "OFF", ev.zone, ev.confidence)
+        status_store.update_relay(ev.on, ev.zone)
         for s in sinks:
             if hasattr(s, "on_state"):
                 try:
@@ -91,6 +101,7 @@ def main():
             except queue.Empty:
                 sig = None
             if sig is not None:
+                status_store.update_zone(sig.zone, sig.is_victory, sig.confidence, sig.hands)
                 for s in sinks:
                     if hasattr(s, "on_signal"):
                         try:

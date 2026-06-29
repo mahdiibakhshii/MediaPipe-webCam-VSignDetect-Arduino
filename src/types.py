@@ -1,7 +1,15 @@
 """Plain data objects passed between agents. See agents/README.md."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+@dataclass
+class HandResult:
+    """Detection result for one hand within a single frame."""
+    handedness: str   # "Left", "Right", or "Unknown"
+    is_victory: bool
+    confidence: float  # gesture score (GestureRecognizer) or detection score (LandmarkRule)
 
 
 @dataclass
@@ -11,6 +19,7 @@ class ZoneSignal:
     is_victory: bool
     confidence: float
     ts: float  # monotonic seconds
+    hands: list = field(default_factory=list)  # list[HandResult] — per-hand detail for debug
 
 
 @dataclass

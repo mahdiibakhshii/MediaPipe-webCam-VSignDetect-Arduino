@@ -13,6 +13,8 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
+from ..types import HandResult
+
 # Landmark indices
 WRIST, THUMB_MCP, THUMB_TIP = 0, 2, 4
 INDEX_PIP, INDEX_TIP = 6, 8
@@ -51,20 +53,34 @@ class LandmarkRuleClassifier:
         rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         result = self._landmarker.detect_for_video(image, ts)
-        if not result.hand_landmarks:
-            return False, 0.0
 
+        if not result.hand_landmarks:
+            return False, 0.0, []
+
+        hands: list[HandResult] = []
         is_victory = False
         best_conf = 0.0
-        handedness = result.handedness
+
         for i, landmarks in enumerate(result.hand_landmarks):
-            if self._is_victory(landmarks):
-                conf = (handedness[i][0].score
-                        if handedness and i < len(handedness) and handedness[i]
-                        else 1.0)
+            hand_is_victory = self._is_victory(landmarks)
+
+            conf = 1.0
+            handedness = "Unknown"
+            if result.handedness and i < len(result.handedness) and result.handedness[i]:
+                conf = result.handedness[i][0].score
+                handedness = result.handedness[i][0].display_name
+
+            hands.append(HandResult(
+                handedness=handedness,
+                is_victory=hand_is_victory,
+                confidence=conf,
+            ))
+
+            if hand_is_victory:
                 is_victory = True
                 best_conf = max(best_conf, conf)
-        return is_victory, (best_conf if is_victory else 0.0)
+
+        return is_victory, (best_conf if is_victory else 0.0), hands
 
     def _is_victory(self, lm) -> bool:
         wrist = lm[WRIST]
