@@ -34,6 +34,11 @@ def main():
     detection = cfg["detection"]
     classifier_name = detection.get("classifier", "gesture_recognizer")
     model_path = ensure_model(model_for_classifier(classifier_name))
+    # Log the detection settings actually in effect — if num_hands looks wrong
+    # here (e.g. 1 when you expect 4), fix it in config.yaml under `detection:`.
+    log.info("detection: classifier=%s num_hands=%s min_score=%s",
+             classifier_name, detection.get("num_hands", 4),
+             detection.get("min_score", 0.6))
 
     # Live-editable settings, persisted next to the config file.
     sidecar = os.path.join(os.path.dirname(os.path.abspath(args.config)), "runtime.json")

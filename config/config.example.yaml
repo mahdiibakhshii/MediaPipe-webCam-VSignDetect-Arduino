@@ -10,7 +10,7 @@ app:
   status_host: "0.0.0.0"    # monitor UI host (0.0.0.0 = reachable from other PCs on the LAN)
   status_port: 8080          # open http://<this-pc-ip>:8080/ for live video + controls
 
-# One entry per webcam. zone is a label; index is OS-specific (re-probe per machine).
+# Single webcam (Zone A). zone is a label; index is OS-specific (re-probe per machine).
 cameras:
   - zone: "A"
     index: 0                 # Windows: 0,1,...  macOS: re-probe (doc 05)
@@ -19,19 +19,12 @@ cameras:
     fps: 30
     frame_skip: 0            # 0 = every frame; raise to save CPU
     worker: thread           # thread | process
-  - zone: "B"
-    index: 1
-    width: 640
-    height: 480
-    fps: 30
-    frame_skip: 0
-    worker: thread
 
 detection:
   classifier: gesture_recognizer   # gesture_recognizer | landmark_rule
   min_score: 0.6                   # confidence required to call it "Victory"
   num_hands: 4                     # max hands tracked per frame; ANY hand = a V (OR)
-  model_complexity: 0              # 0 = lite/fast (recommended for 2 streams on CPU)
+  model_complexity: 0              # 0 = lite/fast
   # landmark_rule extras (ignored by gesture_recognizer):
   spread_min: 0.0                  # min index/middle tip gap; 0 = skip check
   require_thumb_tucked: false
