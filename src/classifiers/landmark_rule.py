@@ -74,6 +74,7 @@ class LandmarkRuleClassifier:
                 handedness=handedness,
                 is_victory=hand_is_victory,
                 confidence=conf,
+                landmarks=[(lm.x, lm.y) for lm in landmarks],
             ))
 
             if hand_is_victory:

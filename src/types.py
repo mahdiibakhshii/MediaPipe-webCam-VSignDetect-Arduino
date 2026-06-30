@@ -10,6 +10,9 @@ class HandResult:
     handedness: str   # "Left", "Right", or "Unknown"
     is_victory: bool
     confidence: float  # gesture score (GestureRecognizer) or detection score (LandmarkRule)
+    # 21 normalized (x, y) landmark coords in [0,1]; empty if unavailable.
+    # Used only to draw the skeleton overlay on the monitor video.
+    landmarks: list = field(default_factory=list)
 
 
 @dataclass

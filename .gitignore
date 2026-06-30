@@ -5,6 +5,7 @@ __pycache__/
 
 # Per-machine config & runtime
 config/config.yaml
+config/runtime.json
 logs/
 *.log
 

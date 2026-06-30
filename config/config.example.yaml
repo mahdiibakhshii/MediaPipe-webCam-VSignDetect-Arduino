@@ -7,8 +7,8 @@ app:
   log_file: logs/vsign.log
   watchdog_stale_s: 5        # restart a vision worker silent this long
   heartbeat_s: 30            # periodic "alive" log
-  status_host: "0.0.0.0"    # live debug dashboard host (0.0.0.0 = all interfaces)
-  status_port: 8080          # open http://<mac-mini-ip>:8080/ to view
+  status_host: "0.0.0.0"    # monitor UI host (0.0.0.0 = reachable from other PCs on the LAN)
+  status_port: 8080          # open http://<this-pc-ip>:8080/ for live video + controls
 
 # One entry per webcam. zone is a label; index is OS-specific (re-probe per machine).
 cameras:
@@ -37,17 +37,19 @@ detection:
   require_thumb_tucked: false
 
 trigger:
-  relay_mode: follow        # follow | pulse
+  relay_mode: pulse         # pulse | follow
+                            #   pulse  = relay turns ON for pulse_s seconds per V detection
                             #   follow = relay ON while any hand holds a V, OFF when none do
-                            #   pulse  = one momentary pulse per debounced gesture (legacy)
   mode: time                # time | frames  (how the hold below is measured)
-  hold_ms: 350              # V must persist this long before relay turns ON (time mode)
+  hold_ms: 350              # V must persist this long before it counts (time mode) [LIVE]
   hold_frames: 8            # used when mode = frames
-  release_ms: 250           # follow: no-V this long turns relay OFF (debounce, anti-flicker)
+  release_ms: 250           # follow: no-V this long turns relay OFF (anti-flicker)
                             # pulse:  gesture must drop this long before re-arming
-  # pulse-mode only:
-  cooldown_s: 3.0           # min gap between fires (>= firmware PULSE_MS/1000 + gap)
+  # pulse-mode:
+  pulse_s: 5.0              # relay ON duration per detection (host-timed) [LIVE]
+  cooldown_s: 5.0           # min gap between fires; keep >= pulse_s [LIVE]
   require_release: true     # one continuous hold = one fire
+  # [LIVE] keys are editable from the monitor UI at runtime (persisted to config/runtime.json)
 
 # Output sinks: where a fire (and live per-frame state) is sent. Multiple allowed.
 # Each sink may receive per-frame ZoneSignals (on_signal) and/or fire events (on_fire).

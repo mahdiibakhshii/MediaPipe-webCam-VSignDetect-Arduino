@@ -2,36 +2,39 @@
 
 The relay can run in two modes, selected by `trigger.relay_mode`:
 
-## follow (default) — relay tracks the live victory sign
+## pulse (default) — relay ON for a fixed time per detection
+
+On a confirmed trigger the relay switches **ON for `pulse_s` seconds, then OFF**.
+The timing is **host-owned** (the serial sink sends `ON`, then `OFF` after
+`pulse_s`), so the duration is configurable **live from the monitor UI** without
+reflashing. A re-trigger during the window restarts the timer (extends ON).
+
+Keep `cooldown_s >= pulse_s` so one hold = one pulse.
+
+## follow — relay tracks the live victory sign
 
 The relay is **ON for exactly as long as a victory sign is present** and **OFF the
 moment none is** — it mirrors the gesture in real time. A V from *any* hand in
 *any* zone holds it on (OR); it releases once every zone is V-free.
 
-The host holds the relay with `ON`/`OFF` commands. A small debounce smooths it:
-`hold_ms` of V to switch ON, `release_ms` of no-V to switch OFF, so a single
-dropped detection frame can't make it flicker.
+`hold_ms` of V switches ON, `release_ms` of no-V switches OFF, so a single dropped
+detection frame can't make it flicker. The relay state purely mirrors detection —
+no watchdog or auto-release.
 
-The relay state purely mirrors detection — there is no watchdog or auto-release
-timer. Relay is OFF on boot and the host sends `OFF` on clean shutdown.
-
-## pulse (legacy) — momentary pulse per trigger
-
-On a confirmed trigger the relay switches **ON for a fixed duration, then OFF
-automatically**. Timing is owned by the **Arduino firmware** (`PULSE_MS`) so it is
-deterministic and unaffected by host load.
-
-Rule: `trigger.cooldown_s >= PULSE_MS/1000 + a small gap`.
+In both modes the relay is OFF on boot and the host sends `OFF` on clean shutdown.
 
 ## Split of responsibility
 
 | Concern | Owner | Setting |
 |---|---|---|
 | Mode | Host (Trigger Agent) | `trigger.relay_mode` |
+| When to fire | Host | `hold_ms`, `cooldown_s` |
+| Pulse ON duration (pulse) | Host (serial sink, timed) | `trigger.pulse_s` [LIVE] |
 | When ON/OFF (follow) | Host | `hold_ms`, `release_ms` |
-| When to fire (pulse) | Host | `cooldown_s`, `hold_ms` |
-| Pulse duration (pulse) | Arduino firmware | `PULSE_MS` (default 2000) |
-| ON on boot | Arduino firmware | `OFF` on `setup()` |
+| Relay OFF on boot | Arduino firmware | `OFF` in `setup()` |
+
+> The firmware also has a legacy `FIRE` command (fixed `PULSE_MS` pulse), used by
+> `serial_test`, but the engine drives pulses via host-timed `ON`/`OFF`.
 
 ## See also
 
@@ -41,8 +44,7 @@ Rule: `trigger.cooldown_s >= PULSE_MS/1000 + a small gap`.
 
 ## Acceptance
 
-- [ ] **follow**: relay is ON while a ✌️ is held and OFF within `release_ms` of it dropping.
-- [ ] **follow**: a single dropped detection frame does not flicker the relay.
-- [ ] **follow**: relay mirrors detection state with no timeout or auto-release.
-- [ ] **pulse**: one trigger → one clean pulse of `PULSE_MS`, then OFF; extra triggers during a pulse are `BUSY`.
+- [ ] **pulse**: a held ✌️ turns the relay ON for `pulse_s`, then OFF; changing `pulse_s` in the monitor UI takes effect on the next fire.
+- [ ] **pulse**: a re-trigger during the ON window extends it (single OFF after the last fire).
+- [ ] **follow**: relay is ON while a ✌️ is held and OFF within `release_ms` of it dropping, with no flicker on a dropped frame.
 - [ ] Power-cycling the Arduino leaves the relay OFF.

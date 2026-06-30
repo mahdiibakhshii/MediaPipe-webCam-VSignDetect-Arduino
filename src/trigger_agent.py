@@ -2,13 +2,15 @@
 
 Two relay modes:
 
-- **follow** (default): the relay tracks the *presence* of a victory sign. It
-  turns ON as soon as any zone has held a V for `hold_ms`/`hold_frames`, and OFF
-  once every zone has been V-free for `release_ms`. Emits `RelayState` only on
-  transitions. The small on/off debounce keeps a single dropped frame from
-  flickering the relay (golden rule 3) while still feeling instant.
-- **pulse** (legacy): one debounced hold = one one-shot `TriggerEvent`, gated by
-  `cooldown_s` and (optionally) a sustained release before re-arming.
+- **pulse** (default): one debounced hold = one one-shot `TriggerEvent`, gated by
+  `cooldown_s` and (optionally) a sustained release before re-arming. The relay
+  sink then holds the relay ON for `pulse_s` seconds.
+- **follow**: the relay tracks the *presence* of a victory sign. It turns ON as
+  soon as any zone has held a V for `hold_ms`/`hold_frames`, and OFF once every
+  zone has been V-free for `release_ms`. Emits `RelayState` only on transitions.
+
+`hold_ms` and `cooldown_s` are read live from RuntimeSettings so the monitor UI
+can retune them without a restart.
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ import logging
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from .runtime_settings import RuntimeSettings
 from .types import RelayState, TriggerEvent, ZoneSignal
 
 log = logging.getLogger(__name__)
@@ -32,21 +35,31 @@ class _ZoneState:
 
 
 class TriggerAgent:
-    def __init__(self, cfg: dict,
+    def __init__(self, settings: RuntimeSettings,
                  on_fire: Callable[[TriggerEvent], None],
                  on_state: Optional[Callable[[RelayState], None]] = None):
-        self.relay_mode = cfg.get("relay_mode", "follow")
-        self.mode = cfg.get("mode", "time")
-        self.hold_ms = float(cfg.get("hold_ms", 350))
-        self.hold_frames = int(cfg.get("hold_frames", 8))
-        self.cooldown_s = float(cfg.get("cooldown_s", 3.0))
-        self.require_release = bool(cfg.get("require_release", True))
-        self.release_ms = float(cfg.get("release_ms", 250))
+        self._settings = settings
+        snap = settings.snapshot()
+        # Static for the run (mode/relay_mode/release are not live-editable).
+        self.relay_mode = snap.get("relay_mode", "pulse")
+        self.mode = snap.get("mode", "time")
+        self.hold_frames = int(snap.get("hold_frames", 8))
+        self.require_release = bool(snap.get("require_release", True))
+        self.release_ms = float(snap.get("release_ms", 250))
         self._on_fire = on_fire
         self._on_state = on_state
         self._zones: dict[str, _ZoneState] = {}
         self._last_fire = float("-inf")  # never block the first fire
         self._relay_on = False           # follow mode: overall (OR) relay level
+
+    # hold_ms and cooldown_s are read live so the monitor UI can retune them.
+    @property
+    def hold_ms(self) -> float:
+        return float(self._settings.get("hold_ms"))
+
+    @property
+    def cooldown_s(self) -> float:
+        return float(self._settings.get("cooldown_s"))
 
     def submit(self, sig: ZoneSignal):
         st = self._zones.setdefault(sig.zone, _ZoneState())

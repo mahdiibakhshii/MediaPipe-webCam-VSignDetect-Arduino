@@ -9,10 +9,15 @@ across hands; the trigger ORs across zones).
 
 Two relay modes (config `relay_mode`):
 
-- **follow** (default): the relay tracks *presence* — ON while a V is held,
-  OFF when it's gone. Emits `RelayState` on transitions only.
-- **pulse** (legacy): one debounced hold = one one-shot `TriggerEvent`, gated by
-  `cooldown_s`.
+- **pulse** (default): one debounced hold = one `TriggerEvent`, gated by
+  `cooldown_s`. The serial sink then holds the relay ON for `pulse_s` seconds
+  (host-timed, so the duration is tunable live from the monitor UI).
+- **follow**: the relay tracks *presence* — ON while a V is held, OFF when it's
+  gone. Emits `RelayState` on transitions only.
+
+`hold_ms`, `cooldown_s`, and `pulse_s` are read live from `RuntimeSettings`, so
+the monitor UI can retune them without a restart (persisted to
+`config/runtime.json`).
 
 ## Interface
 
@@ -69,14 +74,17 @@ deterministic testing.
 
 ```yaml
 trigger:
-  relay_mode: follow      # follow | pulse
+  relay_mode: pulse       # pulse | follow
   mode: time              # time | frames  (how the hold below is measured)
-  hold_ms: 350            # V must persist this long before ON (time mode)
+  hold_ms: 350            # V must persist this long before it counts (time mode) [LIVE]
   hold_frames: 8          # used when mode=frames
   release_ms: 250         # follow: no-V this long → OFF | pulse: drop before re-arm
-  cooldown_s: 3.0         # pulse only: min gap between fires (>= PULSE_MS/1000 + gap)
-  require_release: true   # pulse only: one continuous hold = one fire
+  pulse_s: 5.0            # pulse: relay ON duration per detection (host-timed) [LIVE]
+  cooldown_s: 5.0         # pulse: min gap between fires; keep >= pulse_s [LIVE]
+  require_release: true   # pulse: one continuous hold = one fire
 ```
+
+`[LIVE]` keys are editable at runtime from the monitor UI.
 
 ## Acceptance criteria
 

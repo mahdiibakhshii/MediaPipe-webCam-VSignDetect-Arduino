@@ -38,25 +38,29 @@ class GestureRecognizerClassifier:
         is_victory = False
         victory_score = 0.0
 
-        for i, hand_gestures in enumerate(result.gestures):  # one list per detected hand
-            if not hand_gestures:
-                continue
-            top = hand_gestures[0]
+        # Iterate per detected hand; gestures[i] and hand_landmarks[i] are aligned.
+        for i, landmarks in enumerate(result.hand_landmarks):
+            hand_gestures = result.gestures[i] if i < len(result.gestures) else []
+            top = hand_gestures[0] if hand_gestures else None
 
             handedness = "Unknown"
             if result.handedness and i < len(result.handedness) and result.handedness[i]:
                 handedness = result.handedness[i][0].display_name
 
-            hand_is_victory = top.category_name == "Victory" and top.score >= self._min_score
+            score = top.score if top else 0.0
+            hand_is_victory = bool(top) and top.category_name == "Victory" \
+                and top.score >= self._min_score
+
             hands.append(HandResult(
                 handedness=handedness,
                 is_victory=hand_is_victory,
-                confidence=top.score,
+                confidence=score,
+                landmarks=[(lm.x, lm.y) for lm in landmarks],
             ))
 
             if hand_is_victory:
                 is_victory = True
-                victory_score = max(victory_score, top.score)
+                victory_score = max(victory_score, score)
 
         return is_victory, victory_score, hands
 

@@ -6,15 +6,18 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import queue
 import signal
+import threading
 import time
 
 from .config import load_config
 from .logging_setup import setup_logging
 from .models import ensure_model, model_for_classifier
+from .runtime_settings import RuntimeSettings
 from .sinks import build_sinks
-from .status_server import StatusStore, start_status_server
+from .status_server import FrameStore, StatusStore, start_monitor_server
 from .trigger_agent import TriggerAgent
 from .vision_agent import VisionAgent
 
@@ -32,18 +35,37 @@ def main():
     classifier_name = detection.get("classifier", "gesture_recognizer")
     model_path = ensure_model(model_for_classifier(classifier_name))
 
-    sinks = build_sinks(cfg)
+    # Live-editable settings, persisted next to the config file.
+    sidecar = os.path.join(os.path.dirname(os.path.abspath(args.config)), "runtime.json")
+    settings = RuntimeSettings(cfg.get("trigger", {}), sidecar_path=sidecar)
+
+    sinks = build_sinks(cfg, settings)
 
     app_cfg = cfg.get("app", {})
     status_store = StatusStore()
-    start_status_server(
-        status_store,
+    frame_store = FrameStore()
+    start_monitor_server(
+        status_store, frame_store, settings,
         host=app_cfg.get("status_host", "0.0.0.0"),
         port=int(app_cfg.get("status_port", 8080)),
     )
 
+    # Logical relay state for the monitor: in pulse mode the relay is held ON for
+    # pulse_s then released; reflect that window in the UI (mirrors the sink timer).
+    relay_timer: dict = {"t": None}
+
+    def _relay_off():
+        status_store.update_relay(False, None)
+
     def on_fire(ev):
         log.info("FIRE zone=%s conf=%.2f", ev.zone, ev.confidence)
+        pulse_s = float(settings.get("pulse_s"))
+        status_store.update_relay(True, ev.zone)
+        if relay_timer["t"] is not None:
+            relay_timer["t"].cancel()
+        relay_timer["t"] = threading.Timer(pulse_s, _relay_off)
+        relay_timer["t"].daemon = True
+        relay_timer["t"].start()
         for s in sinks:
             if hasattr(s, "on_fire"):
                 try:
@@ -62,7 +84,7 @@ def main():
                 except Exception:
                     log.exception("sink on_state error")
 
-    trigger = TriggerAgent(cfg.get("trigger", {}), on_fire, on_state)
+    trigger = TriggerAgent(settings, on_fire, on_state)
 
     q: "queue.Queue" = queue.Queue(maxsize=400)
 
@@ -74,7 +96,7 @@ def main():
 
     agents = []
     for cam in cfg["cameras"]:
-        agent = VisionAgent(cam["zone"], cam, detection, model_path, emit)
+        agent = VisionAgent(cam["zone"], cam, detection, model_path, emit, frame_store)
         agents.append(agent)
         agent.start()
         log.info("started vision zone=%s index=%s", cam["zone"], cam["index"])

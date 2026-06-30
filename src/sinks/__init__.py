@@ -6,11 +6,12 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def build_sinks(cfg: dict) -> list:
+def build_sinks(cfg: dict, settings=None) -> list:
     """Build the enabled output sinks from the full config.
 
     Reads cfg['outputs'] (the list of sinks) and, for the serial sink, the
-    top-level cfg['serial'] connection settings.
+    top-level cfg['serial'] connection settings. `settings` (RuntimeSettings) is
+    passed to the serial sink so the relay pulse duration is live-tunable.
     """
     specs = cfg.get("outputs", []) or []
     serial_cfg = cfg.get("serial", {}) or {}
@@ -37,7 +38,7 @@ def build_sinks(cfg: dict) -> list:
         elif kind == "serial":
             from .serial_sink import SerialSink
 
-            sinks.append(SerialSink(serial_cfg))
+            sinks.append(SerialSink(serial_cfg, settings))
             log.info("output: serial -> %s", serial_cfg.get("port"))
         else:
             log.warning("output: unknown sink type %r — skipping", kind)

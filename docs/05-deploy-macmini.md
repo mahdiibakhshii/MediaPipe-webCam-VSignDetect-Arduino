@@ -99,6 +99,21 @@ Expected: `READY`, `PONG`, `OK FIRE`, relay clicks, `DONE`.
 ./.venv/bin/python -m src.orchestrator --config config/config.yaml
 ```
 
+### Monitor & control UI
+
+The engine (including the autostart service) serves a built-in monitor at
+**`http://<mac-mini-ip>:8080/`** — open it from any PC/phone on the same network
+(`app.status_port` in config). It shows, per camera:
+
+- live video with a hand-skeleton overlay (green when a hand is a ✌️) — use it to
+  check camera framing/position,
+- the relay ON/OFF state and per-hand detection detail,
+- sliders to change the relay ON duration (`pulse_s`), hold time, and cooldown
+  **live** — changes apply immediately and persist to `config/runtime.json`.
+
+The video stream only uses CPU while the page is open. Find the Mac mini's IP with
+`ipconfig getifaddr en0` (or System Settings → Network).
+
 ## 6. Autostart (launchd)
 
 Grant camera permission interactively first — run the engine once, click Allow on
