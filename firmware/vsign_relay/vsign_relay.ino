@@ -20,7 +20,7 @@
  */
 
 const uint8_t  RELAY_PIN  = 7;      // digital pin to relay module IN
-const bool     ACTIVE_LOW = false;  // true if the module switches ON when IN = LOW
+const bool     ACTIVE_LOW = true;   // this module is active-LOW: IN=LOW turns the relay ON
 const uint32_t PULSE_MS   = 2000;   // relay ON duration per FIRE pulse (ms)
 const uint32_t BAUD       = 115200;
 
